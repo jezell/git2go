@@ -24,4 +24,12 @@ int _go_git_odb_foreach(git_odb *db, void *payload)
 {
     return git_odb_foreach(db, (git_odb_foreach_cb)&odbForEachCb, payload);
 }
+
+void _go_git_set_strarray_n(git_strarray *array, char *str, size_t n) {
+	array->strings[n] = str;
+}
+
+char *_go_git_get_strarray_n(git_strarray *array, size_t n) {
+	return array->strings[n];
+}
 /* EOF */
