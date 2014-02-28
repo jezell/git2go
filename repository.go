@@ -153,8 +153,13 @@ func (v *Repository) CreateReference(name string, id *Oid, force bool, sig *Sign
 	csig := sig.toC()
 	defer C.free(unsafe.Pointer(csig))
 
-	cmsg := C.CString(msg)
-	defer C.free(unsafe.Pointer(cmsg))
+	var cmsg *C.char
+	if msg == "" {
+		cmsg = nil
+	} else {
+		cmsg = C.CString(msg)
+		defer C.free(unsafe.Pointer(cmsg))
+	}
 
 	var ptr *C.git_reference
 
@@ -179,8 +184,13 @@ func (v *Repository) CreateSymbolicReference(name, target string, force bool, si
 	csig := sig.toC()
 	defer C.free(unsafe.Pointer(csig))
 
-	cmsg := C.CString(msg)
-	defer C.free(unsafe.Pointer(cmsg))
+	var cmsg *C.char
+	if msg == "" {
+		cmsg = nil
+	} else {
+		cmsg = C.CString(msg)
+		defer C.free(unsafe.Pointer(cmsg))
+	}
 
 	var ptr *C.git_reference
 
@@ -331,4 +341,53 @@ func (v *Repository) RevparseSingle(spec string) (Object, error) {
 	}
 
 	return allocObject(ptr), nil
+}
+
+// EnsureLog ensures that there is a reflog for the given reference
+// name and creates an empty one if necessary.
+func (v *Repository) EnsureLog(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if ret := C.git_reference_ensure_log(v.ptr, cname); ret < 0 {
+		return LastError()
+	}
+
+	return nil
+}
+
+// HasLog returns whether there is a reflog for the given reference
+// name
+func (v *Repository) HasLog(name string) (bool, error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	ret := C.git_reference_has_log(v.ptr, cname)
+	if ret < 0 {
+		return false, LastError()
+	}
+
+	return ret == 1, nil
+}
+
+// DwimReference looks up a reference by DWIMing its short name
+func (v *Repository) DwimReference(name string) (*Reference, error) {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	var ptr *C.git_reference
+	if ret := C.git_reference_dwim(&ptr, v.ptr, cname); ret < 0 {
+		return nil, LastError()
+	}
+
+	return newReferenceFromC(ptr), nil
 }
