@@ -23,7 +23,7 @@ type IndexEntry struct {
 	Uid   uint
 	Gid   uint
 	Size  uint
-	Id   *Oid
+	Id    *Oid
 	Path  string
 }
 
@@ -48,6 +48,21 @@ func (v *Index) AddByPath(path string) error {
 	return nil
 }
 
+func (v *Index) RemoveByPath(path string) error {
+	cstr := C.CString(path)
+	defer C.free(unsafe.Pointer(cstr))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	ret := C.git_index_remove_bypath(v.ptr, cstr)
+	if ret < 0 {
+		return MakeGitError(ret)
+	}
+
+	return nil
+}
+
 func (v *Index) WriteTree() (*Oid, error) {
 	oid := new(Oid)
 
@@ -62,7 +77,7 @@ func (v *Index) WriteTree() (*Oid, error) {
 	return oid, nil
 }
 
-func (v *Index) Write() (error) {
+func (v *Index) Write() error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
