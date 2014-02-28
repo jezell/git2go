@@ -63,4 +63,18 @@ int _go_git_push_set_callbacks(git_push *push, void *packbuilder_progress_data, 
 	return git_push_set_callbacks(push, packbuilderProgress, packbuilder_progress_data, pushTransferProgress, transfer_progress_data);
 }
 
+git_merge_head** _go_git_make_merge_head_array(size_t len)
+{
+	return (git_merge_head**)malloc(sizeof(git_merge_head*) * len);
+}
+
+void _go_git_merge_head_array_set(git_merge_head** array, git_merge_head* ptr, size_t n)
+{
+	array[n] = ptr;
+}
+
+git_merge_head* _go_git_merge_head_array_get(git_merge_head** array, size_t n)
+{
+	return array[n];	
+}
 /* EOF */
