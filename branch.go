@@ -19,18 +19,11 @@ const (
 	BranchRemote            = C.GIT_BRANCH_REMOTE
 )
 
-const (
-	RefsDir        = "refs/"
-	RefsHeadsDir   = RefsDir + "heads/"
-	RefsTagsDir    = RefsDir + "tags/"
-	RefsRemotesDir = RefsDir + "remotes/"
-)
-
 type Branch struct {
 	Reference
 }
 
-func (repo *Repository) CreateBranch(branchName string, target *Commit, force bool, signature *Signature, message string) (*Reference, error) {
+func (repo *Repository) CreateBranch(branchName string, target *Commit, force bool, signature *Signature, msg string) (*Reference, error) {
 
 	ref := new(Reference)
 	cBranchName := C.CString(branchName)
@@ -39,13 +32,18 @@ func (repo *Repository) CreateBranch(branchName string, target *Commit, force bo
 	cSignature := signature.toC()
 	defer C.git_signature_free(cSignature)
 
-	cMessage := C.CString(message)
-	defer C.free(unsafe.Pointer(cMessage))
+	var cmsg *C.char
+	if msg == "" {
+		cmsg = nil
+	} else {
+		cmsg = C.CString(msg)
+		defer C.free(unsafe.Pointer(cmsg))
+	}
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ret := C.git_branch_create(&ref.ptr, repo.ptr, cBranchName, target.ptr, cForce, cSignature, cMessage)
+	ret := C.git_branch_create(&ref.ptr, repo.ptr, cBranchName, target.ptr, cForce, cSignature, cmsg)
 	if ret < 0 {
 		return nil, MakeGitError(ret)
 	}
@@ -63,7 +61,7 @@ func (b *Branch) Delete() error {
 	return nil
 }
 
-func (b *Branch) Move(newBranchName string, force bool, signature *Signature, message string) (*Branch, error) {
+func (b *Branch) Move(newBranchName string, force bool, signature *Signature, msg string) (*Branch, error) {
 	newBranch := new(Branch)
 	cNewBranchName := C.CString(newBranchName)
 	cForce := cbool(force)
@@ -71,13 +69,18 @@ func (b *Branch) Move(newBranchName string, force bool, signature *Signature, me
 	cSignature := signature.toC()
 	defer C.git_signature_free(cSignature)
 
-	cMessage := C.CString(message)
-	defer C.free(unsafe.Pointer(cMessage))
+	var cmsg *C.char
+	if msg == "" {
+		cmsg = nil
+	} else {
+		cmsg = C.CString(msg)
+		defer C.free(unsafe.Pointer(cmsg))
+	}
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ret := C.git_branch_move(&newBranch.ptr, b.ptr, cNewBranchName, cForce, cSignature, cMessage)
+	ret := C.git_branch_move(&newBranch.ptr, b.ptr, cNewBranchName, cForce, cSignature, cmsg)
 	if ret < 0 {
 		return nil, MakeGitError(ret)
 	}
@@ -95,9 +98,8 @@ func (b *Branch) IsHead() (bool, error) {
 		return true, nil
 	case 0:
 		return false, nil
-	default:
-		return false, MakeGitError(ret)
 	}
+	return false, MakeGitError(ret)
 
 }
 
@@ -142,9 +144,9 @@ func (repo *Repository) RemoteName(canonicalBranchName string) (string, error) {
 	if ret < 0 {
 		return "", MakeGitError(ret)
 	}
-	C.git_buf_free(&nameBuf)
+	defer C.git_buf_free(&nameBuf)
 
-	return C.GoStringN(nameBuf.ptr, C.int(nameBuf.size)), nil
+	return C.GoString(nameBuf.ptr), nil
 }
 
 func (b *Branch) SetUpstream(upstreamName string) error {
@@ -185,7 +187,7 @@ func (repo *Repository) UpstreamName(canonicalBranchName string) (string, error)
 	if ret < 0 {
 		return "", MakeGitError(ret)
 	}
-	C.git_buf_free(&nameBuf)
+	defer C.git_buf_free(&nameBuf)
 
-	return C.GoStringN(nameBuf.ptr, C.int(nameBuf.size)), nil
+	return C.GoString(nameBuf.ptr), nil
 }
