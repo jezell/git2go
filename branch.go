@@ -144,7 +144,7 @@ func (b *Branch) Delete() error {
 	return nil
 }
 
-func (b *Branch) MoveBranch(newBranchName string, force bool, signature *Signature, msg string) (*Branch, error) {
+func (b *Branch) Move(newBranchName string, force bool, signature *Signature, msg string) (*Branch, error) {
 	var ptr *C.git_reference
 	cNewBranchName := C.CString(newBranchName)
 	cForce := cbool(force)
