@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_List_Branches(t *testing.T) {
+func TestBranchIterator(t *testing.T) {
 
 	repo := createTestRepo(t)
 	seedTestRepo(t, repo)
@@ -12,16 +12,14 @@ func Test_List_Branches(t *testing.T) {
 	i, err := repo.NewBranchIterator(BranchLocal)
 	checkFatal(t, err)
 
-	ref, err := i.Next()
+	b, bt, err := i.Next()
 	checkFatal(t, err)
-	if ref.Name() != "refs/heads/master" {
-		t.Fatalf("expected refs/heads/master, not %v", ref.Name())
+	if name, _ := b.Name(); name != "master" {
+		t.Fatalf("expected master")
+	} else if bt != BranchLocal {
+		t.Fatalf("expected BranchLocal, not %v", t)
 	}
-	ref, err = i.Next()
-	if ref != nil {
-		t.Fatal("expected nil")
-	}
-
+	b, bt, err = i.Next()
 	if err != ErrIterOver {
 		t.Fatal("expected iterover")
 	}
