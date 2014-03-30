@@ -39,6 +39,9 @@ func (r *Repository) MergeHeadFromFetchHead(branchName string, remoteURL string,
 	cremoteURL := C.CString(remoteURL)
 	defer C.free(unsafe.Pointer(cremoteURL))
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	ret := C.git_merge_head_from_fetchhead(&mh.ptr, r.ptr, cbranchName, cremoteURL, oid.toC())
 	if ret < 0 {
 		return nil, MakeGitError(ret)
@@ -50,6 +53,9 @@ func (r *Repository) MergeHeadFromFetchHead(branchName string, remoteURL string,
 func (r *Repository) MergeHeadFromId(oid *Oid) (*MergeHead, error) {
 	mh := &MergeHead{}
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	ret := C.git_merge_head_from_id(&mh.ptr, r.ptr, oid.toC())
 	if ret < 0 {
 		return nil, MakeGitError(ret)
@@ -60,6 +66,9 @@ func (r *Repository) MergeHeadFromId(oid *Oid) (*MergeHead, error) {
 
 func (r *Repository) MergeHeadFromRef(ref *Reference) (*MergeHead, error) {
 	mh := &MergeHead{}
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 
 	ret := C.git_merge_head_from_ref(&mh.ptr, r.ptr, ref.ptr)
 	if ret < 0 {
