@@ -127,6 +127,26 @@ func RemoteIsValidName(name string) bool {
 	return false
 }
 
+func (r *Remote) SetCheckCert(check bool) {
+	C.git_remote_check_cert(r.ptr, cbool(check))
+}
+
+func (r *Remote) SetCallbacks(callbacks *RemoteCallbacks) error {
+	var ccallbacks C.git_remote_callbacks
+
+	populateRemoteCallbacks(&ccallbacks, callbacks)
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	ecode := C.git_remote_set_callbacks(r.ptr, &ccallbacks)
+	if ecode < 0 {
+		return MakeGitError(ecode)
+	}
+
+	return nil
+}
+
 func (r *Remote) Free() {
 	runtime.SetFinalizer(r, nil)
 	C.git_remote_free(r.ptr)
@@ -184,7 +204,7 @@ func (repo *Repository) CreateRemoteWithFetchspec(name string, url string, fetch
 	return remote, nil
 }
 
-func (repo *Repository) CreateAnonymousRemote(fetch string, url string) (*Remote, error) {
+func (repo *Repository) CreateAnonymousRemote(url, fetch string) (*Remote, error) {
 	remote := &Remote{}
 
 	curl := C.CString(url)
@@ -195,7 +215,7 @@ func (repo *Repository) CreateAnonymousRemote(fetch string, url string) (*Remote
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ret := C.git_remote_create_anonymous(&remote.ptr, repo.ptr, cfetch, curl)
+	ret := C.git_remote_create_anonymous(&remote.ptr, repo.ptr, curl, cfetch)
 	if ret < 0 {
 		return nil, MakeGitError(ret)
 	}
