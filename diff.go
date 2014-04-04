@@ -379,11 +379,11 @@ func (v *Repository) DiffTreeToTree(oldTree, newTree *Tree, opts *DiffOptions) (
 	var oldPtr, newPtr *C.git_tree
 
 	if oldTree != nil {
-		oldPtr = oldTree.gitObject.ptr
+		oldPtr = oldTree.cast_ptr
 	}
 
 	if newTree != nil {
-		newPtr = newTree.gitObject.ptr
+		newPtr = newTree.cast_ptr
 	}
 
 	cpathspec := C.git_strarray{}
@@ -423,8 +423,6 @@ func (v *Repository) DiffTreeToTree(oldTree, newTree *Tree, opts *DiffOptions) (
 
 	if notifyData != nil && notifyData.Diff != nil {
 		return notifyData.Diff, nil
-	} else {
-		return newDiffFromC(diffPtr), nil
 	}
-
+	return newDiffFromC(diffPtr), nil
 }
