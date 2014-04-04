@@ -191,7 +191,7 @@ func (r *Repository) MergeCommits(ours *Commit, theirs *Commit, options *MergeOp
 
 	idx := &Index{}
 
-	ret := C.git_merge_commits(&idx.ptr, r.ptr, ours.ptr, theirs.ptr, copts)
+	ret := C.git_merge_commits(&idx.ptr, r.ptr, ours.cast_ptr, theirs.cast_ptr, copts)
 	if ret < 0 {
 		return nil, MakeGitError(ret)
 	}
@@ -207,7 +207,7 @@ func (r *Repository) MergeTrees(ancestor *Tree, ours *Tree, theirs *Tree, option
 
 	idx := &Index{}
 
-	ret := C.git_merge_trees(&idx.ptr, r.ptr, ancestor.ptr, ours.ptr, theirs.ptr, copts)
+	ret := C.git_merge_trees(&idx.ptr, r.ptr, ancestor.cast_ptr, ours.cast_ptr, theirs.cast_ptr, copts)
 	if ret < 0 {
 		return nil, MakeGitError(ret)
 	}
@@ -234,9 +234,8 @@ type MergeFileResult struct {
 	Automergeable bool
 	Path          string
 	Mode          uint
-	Contents      []byte // Contents of file, will be invalid after Free
-
-	ptr *C.git_merge_file_result
+	Contents      []byte
+	ptr           *C.git_merge_file_result
 }
 
 func newMergeFileResultFromC(c *C.git_merge_file_result) *MergeFileResult {
@@ -245,11 +244,14 @@ func newMergeFileResultFromC(c *C.git_merge_file_result) *MergeFileResult {
 		path = C.GoString(c.path)
 	}
 
+	originalBytes := C.GoBytes(unsafe.Pointer(c.ptr), C.int(c.len))
+	gobytes := make([]byte, len(originalBytes))
+	copy(gobytes, originalBytes)
 	r := &MergeFileResult{
 		Automergeable: c.automergeable != 0,
 		Path:          path,
 		Mode:          uint(c.mode),
-		Contents:      C.GoBytes(unsafe.Pointer(c.ptr), C.int(c.len)),
+		Contents:      gobytes,
 		ptr:           c,
 	}
 
