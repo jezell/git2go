@@ -127,10 +127,6 @@ func RemoteIsValidName(name string) bool {
 	return false
 }
 
-func (r *Remote) SetCheckCert(check bool) {
-	C.git_remote_check_cert(r.ptr, cbool(check))
-}
-
 func (r *Remote) SetCallbacks(callbacks *RemoteCallbacks) error {
 	var ccallbacks C.git_remote_callbacks
 
